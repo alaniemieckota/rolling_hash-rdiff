@@ -1,0 +1,11 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Xx]64/
+[Xx]86/
+[Rr]elease/
+bld/
+[Bb]in/
+[Oo]bj/
+node_modules/
+build/build.zip
