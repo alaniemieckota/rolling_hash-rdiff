@@ -9,7 +9,8 @@ namespace rdiff.net
     public class RollingHash
     {
         private const int OVERFLOW_GUARD = 2 << 16;
-        private const int PRIME = 3;
+        private const int PRIME = 8355967;
+        private const int d = 13;
 
         public Signature CalculateSignature(IBytesReader reader, int blockLength, int strongSigLength)
         {
@@ -111,7 +112,7 @@ namespace rdiff.net
 
             for (int i = 0; i < chunk.Length; i++)
             {
-                hash = (hash * PRIME + chunk[i]) % OVERFLOW_GUARD;
+                hash = (hash * d + chunk[i]) % OVERFLOW_GUARD;
             }
 
             return hash;
@@ -119,21 +120,18 @@ namespace rdiff.net
 
         private int RollIn(int hash, byte inByte, int length)
         {
-            hash = (hash * PRIME + inByte) % OVERFLOW_GUARD;
+            hash = (hash * d + inByte) % OVERFLOW_GUARD;
 
             return hash;
         }
 
         private int Rotate(int hash, byte outByte, byte newByte, int blockLength)
         {
-            hash = hash - (outByte * PowWithModulo(PRIME, blockLength - 1, OVERFLOW_GUARD) % OVERFLOW_GUARD);
-            hash = ((hash * PRIME) % OVERFLOW_GUARD + newByte) % OVERFLOW_GUARD;
-
-            if (hash < 0)
+            hash = ((d*(hash - outByte*PowWithModulo(d, blockLength - 1, OVERFLOW_GUARD))) + newByte) % OVERFLOW_GUARD;
+            if(hash < 0)
             {
-                hash = OVERFLOW_GUARD - hash;
+                hash = hash + OVERFLOW_GUARD;
             }
-
             return hash;
         }
 
