@@ -16,14 +16,14 @@ namespace rdiff.net
             var rollingHash = new RollingHash();
             var filePath = @"c:\temp\test_file1.txt";
             var file1 = new FileBytesReader(filePath);
-            var blockLength = 128;
+            var blockLength = 64;
             var strongSigLength = 32;
 
             var signature1 = rollingHash.CalculateSignature(file1, blockLength, strongSigLength);
             var text = File.ReadAllText(filePath); // modify text so we can calculate delta
             text = "X" + text;
             text = text + "X";
-            text = text.Substring(6);
+           // text = text.Substring(6);
 
             var delta = rollingHash.CalculateDelta(signature1, new StringBytesReader(text));
 

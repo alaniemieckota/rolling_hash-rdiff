@@ -38,12 +38,21 @@ namespace rdiff.net
             var cirBuffer = new Queue<byte>(mainSignature.BlockLength);
             var hash = 0;
             var hashProcessedBytes = 0;
+            int blockIndex;
 
             while (true)
             {
                 var nextByteAsInt = modifiedBytes.GetNextByte();
                 if (nextByteAsInt == -1) // EOF
                 {
+                    // check if what has left in the buffer is matching last segment
+                    blockIndex = GetBlockIndexOnMatch(hash, cirBuffer.ToArray(), mainSignature);
+                    if (blockIndex >= 0)
+                    {
+                        result.AppendLine($"Match pos: {blockIndex * mainSignature.BlockLength}, length: {mainSignature.BlockLength}");
+                        cirBuffer.Clear();
+                    }
+
                     break;
                 }
 
@@ -77,11 +86,10 @@ namespace rdiff.net
                     continue;
                 }
 
-                int blockIndex;
                 if (mainSignature.WeakSigToBlock.TryGetValue(hash, out blockIndex))
                 {
                     var strongSignature = this.CalculateStrongSignature(cirBuffer.ToArray(), mainSignature.StrongSigLength);
-
+                    
                     if (mainSignature.StrongSignatures[blockIndex] == strongSignature)
                     {
                         // we have a match
@@ -92,6 +100,16 @@ namespace rdiff.net
                         cirBuffer.Clear();
                     }
                 }
+
+                blockIndex = GetBlockIndexOnMatch(hash, cirBuffer.ToArray(), mainSignature);
+                if (blockIndex >= 0)
+                {
+                    result.AppendLine($"Match pos: {blockIndex * mainSignature.BlockLength}, length: {mainSignature.BlockLength}");
+
+                    hash = 0;
+                    hashProcessedBytes = 0;
+                    cirBuffer.Clear();
+                }
             } // while
 
             result.AppendLine("have to append what is left");
@@ -99,6 +117,22 @@ namespace rdiff.net
             result.AppendLine($"{string.Join("", cirBuffer.Select(x => (char)x))}");
 
             return result.ToString();
+        }
+
+        private int GetBlockIndexOnMatch(int hash, byte[] inBuffer, Signature mainSignature)
+        {
+            int blockIndex;
+            if (mainSignature.WeakSigToBlock.TryGetValue(hash, out blockIndex))
+            {
+                var strongSignature = this.CalculateStrongSignature(inBuffer, mainSignature.StrongSigLength);
+
+                if (mainSignature.StrongSignatures[blockIndex] == strongSignature)
+                {
+                    return blockIndex;
+                }
+            }
+
+            return -1;
         }
 
         private string CalculateStrongSignature(byte[] chunk, int signatureLength)
