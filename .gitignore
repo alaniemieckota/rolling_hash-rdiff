@@ -9,3 +9,4 @@ bld/
 [Oo]bj/
 node_modules/
 build/build.zip
+.vs/

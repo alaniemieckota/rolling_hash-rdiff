@@ -3,14 +3,19 @@ using System.Text;
 
 namespace rdiff.net
 {
-    public class StringBytesReader : IBytesReader
+    public class SequentialBytesReader : IBytesReader
     {
-        private readonly string text;
+        private readonly byte[] bytes;
         private Stream sourceStream;
 
-        public StringBytesReader(string text)
+        public SequentialBytesReader(string text)
         {
-            this.text = text;
+            this.bytes = Encoding.UTF8.GetBytes(text);
+        }
+
+        public SequentialBytesReader(byte[] bytes)
+        {
+            this.bytes = bytes;
         }
 
         public bool GetNext(int size, out byte[] result)
@@ -33,7 +38,7 @@ namespace rdiff.net
             {
                 if (this.sourceStream == null)
                 {
-                    this.sourceStream = new MemoryStream(Encoding.UTF8.GetBytes(this.text));
+                    this.sourceStream = new MemoryStream(bytes);
                 }
 
                 return sourceStream;

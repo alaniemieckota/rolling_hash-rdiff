@@ -2,18 +2,35 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace rdiff.net
 {
     public class RollingHash
     {
-        private const int OVERFLOW_GUARD = 2 << 16;
-        private const int PRIME = 8355967;
+        private const int OVERFLOW_GUARD = 131072; //  2 << 16
         private const int d = 13;
+
+        private const int MIN_BLOCK_LENGTH = 2;
+        private const int MAX_BLOCK_LENGTH = 2 << 24;
+        private const int MIN_STRONG_SIGNATURE_LENGTH = 4;
+        private const int MAX_STRONG_SIGNATURE_LENGTH = 64;
+
 
         public Signature CalculateSignature(IBytesReader reader, int blockLength, int strongSigLength)
         {
+            if(blockLength < MIN_BLOCK_LENGTH || blockLength > MAX_BLOCK_LENGTH)
+            {
+                throw new ArgumentException($"Block length has to be in range [{MIN_BLOCK_LENGTH}, {MAX_BLOCK_LENGTH}]"
+                    ,nameof(blockLength));
+            }
+
+            if (strongSigLength < MIN_STRONG_SIGNATURE_LENGTH || strongSigLength > MAX_STRONG_SIGNATURE_LENGTH)
+            {
+                throw new ArgumentException(
+                    $"Strong signature length has to be in range [{MIN_STRONG_SIGNATURE_LENGTH}, {MAX_STRONG_SIGNATURE_LENGTH}]"
+                    ,nameof(strongSigLength));
+            }
+
             var bytesProcessed = 0;
             var resultSignature = new Signature { BlockLength = blockLength, StrongSigLength = strongSigLength };
 
@@ -27,17 +44,16 @@ namespace rdiff.net
                 bytesProcessed += chunk.Length;
             }
 
-            Console.WriteLine($"Processed bytes: {bytesProcessed}");
-            return resultSignature;
+            return resultSignature; // this could be directly written to stream|file but I wanted to keep it simple and more descriptive
         }
 
         public string CalculateDelta(Signature mainSignature, IBytesReader modifiedBytes)
         {
             var result = new StringBuilder();
             byte leftMostByte = default;
-            var cirBuffer = new Queue<byte>(mainSignature.BlockLength);
+            var cirBuffer = new Queue<byte>(mainSignature.BlockLength); // represents a wheel rolling forward through the file
             var hash = 0;
-            var hashProcessedBytes = 0;
+            var hashProcessedBytesCounter = 0;
             int blockIndex;
 
             while (true)
@@ -45,7 +61,7 @@ namespace rdiff.net
                 var nextByteAsInt = modifiedBytes.GetNextByte();
                 if (nextByteAsInt == -1) // EOF
                 {
-                    // check if what has left in the buffer is matching last segment
+                    // check if what has left in the buffer is matching last chunk
                     blockIndex = GetBlockIndexOnMatch(hash, cirBuffer.ToArray(), mainSignature);
                     if (blockIndex >= 0)
                     {
@@ -68,46 +84,32 @@ namespace rdiff.net
 
                 cirBuffer.Enqueue((byte)nextByteAsInt);
 
-                if (hashProcessedBytes >= mainSignature.BlockLength)
+                if (hashProcessedBytesCounter >= mainSignature.BlockLength)
                 {
                     //Rotate
                     result.AppendLine($"Need to append One byte with value {leftMostByte}: {(char)leftMostByte}");
-                    hash = Rotate(hash, leftMostByte, (byte)nextByteAsInt, mainSignature.BlockLength);
+                    hash = Rotate(hash, leftMostByte, (byte)nextByteAsInt, mainSignature.BlockLength); // remove left byte, add next byte
                 }
                 else
                 {
-                    hash = RollIn(hash, (byte)nextByteAsInt, mainSignature.BlockLength);
+                    hash = RollIn(hash, (byte)nextByteAsInt, mainSignature.BlockLength); // just add next byte from file
                 }
 
-                hashProcessedBytes++;
+                hashProcessedBytesCounter++;
 
-                if (hashProcessedBytes < mainSignature.BlockLength)
+                if (hashProcessedBytesCounter < mainSignature.BlockLength)
                 {
                     continue;
                 }
 
-                if (mainSignature.WeakSigToBlock.TryGetValue(hash, out blockIndex))
-                {
-                    var strongSignature = this.CalculateStrongSignature(cirBuffer.ToArray(), mainSignature.StrongSigLength);
-                    
-                    if (mainSignature.StrongSignatures[blockIndex] == strongSignature)
-                    {
-                        // we have a match
-                        result.AppendLine($"Match pos: {blockIndex * mainSignature.BlockLength}, length: {mainSignature.BlockLength}");
-
-                        hash = 0;
-                        hashProcessedBytes = 0;
-                        cirBuffer.Clear();
-                    }
-                }
-
+                // Do I have such hash in base signature?
                 blockIndex = GetBlockIndexOnMatch(hash, cirBuffer.ToArray(), mainSignature);
                 if (blockIndex >= 0)
                 {
                     result.AppendLine($"Match pos: {blockIndex * mainSignature.BlockLength}, length: {mainSignature.BlockLength}");
 
                     hash = 0;
-                    hashProcessedBytes = 0;
+                    hashProcessedBytesCounter = 0;
                     cirBuffer.Clear();
                 }
             } // while
@@ -122,8 +124,11 @@ namespace rdiff.net
         private int GetBlockIndexOnMatch(int hash, byte[] inBuffer, Signature mainSignature)
         {
             int blockIndex;
+
+            // Do I have such hash in base signature?
             if (mainSignature.WeakSigToBlock.TryGetValue(hash, out blockIndex))
             {
+                // Does it really equal? (strong sig is here so there is no need to compare byte by byte)
                 var strongSignature = this.CalculateStrongSignature(inBuffer, mainSignature.StrongSigLength);
 
                 if (mainSignature.StrongSignatures[blockIndex] == strongSignature)
@@ -169,12 +174,19 @@ namespace rdiff.net
             return hash;
         }
 
+        /// <summary>
+        /// This is like
+        /// </summary>
+        /// <param name="x">base</param>
+        /// <param name="n">power</param>
+        /// <param name="modulo">by this module the remainder is applied to keep the result not to overflow</param>
+        /// <returns>modulo remined of (x^n)</returns>
         private int PowWithModulo(int x, int n, int modulo)
         {
             var result = 1;
             for (int i = 0; i < n; i++)
             {
-                result = (result * x) % modulo;
+                result = (result * x) % modulo; // ((x^n) % m == (x^1 % m) * (x^2 % m) * ... * (x^n % m)) % m
             }
 
             return result;
