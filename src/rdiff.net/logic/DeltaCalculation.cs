@@ -23,7 +23,7 @@ namespace rdiff.net.logic
                     blockIndex = GetBlockIndexOnMatch(hash, cirBuffer.ToArray(), mainSignature);
                     if (blockIndex >= 0)
                     {
-                        result.AddChunk(blockIndex * mainSignature.BlockLength, cirBuffer.Count);
+                        result.AddChunk(blockIndex * mainSignature.BlockLength, cirBuffer.Count, mainSignature.BlockLength);
 
                         cirBuffer.Clear();
                     }
@@ -65,7 +65,7 @@ namespace rdiff.net.logic
                 blockIndex = GetBlockIndexOnMatch(hash, cirBuffer.ToArray(), mainSignature);
                 if (blockIndex >= 0)
                 {
-                    result.AddChunk(blockIndex * mainSignature.BlockLength, mainSignature.BlockLength);
+                    result.AddChunk(blockIndex * mainSignature.BlockLength, mainSignature.BlockLength, mainSignature.BlockLength);
 
                     hash = 0;
                     hashProcessedBytesCounter = 0;

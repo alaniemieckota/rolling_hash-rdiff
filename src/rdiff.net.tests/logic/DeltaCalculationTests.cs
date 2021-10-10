@@ -1,7 +1,5 @@
-﻿using Moq;
-using rdiff.net.logic;
+﻿using rdiff.net.logic;
 using rdiff.net.models;
-using System;
 using Xunit;
 
 namespace rdiff.net.tests.logic
@@ -102,8 +100,44 @@ namespace rdiff.net.tests.logic
             Assert.Equal(expectedSequencesCount, actual.Sequence.Count);
 
             Assert.Equal(SequenceType.Chunks, actual.Sequence[0].ChunkType);
-            var firstSequenceItem = (BytesSequence)actual.Sequence[0];
-            Assert.Equal(blockLength, firstSequenceItem.Length);
+            var firstSequenceItem = (ChunksSequence)actual.Sequence[0];
+            Assert.Equal(0, firstSequenceItem.Position);
+            Assert.Equal(4, firstSequenceItem.Length);
+
+            Assert.Equal(SequenceType.Chunks, actual.Sequence[1].ChunkType);
+            var secondSequenceItem = (ChunksSequence)actual.Sequence[1];
+            Assert.Equal(8, secondSequenceItem.Position);
+            Assert.Equal(8, secondSequenceItem.Length);
+        }
+
+        [Fact]
+        public void CalculateDelta_SecondChunkMovedToEnd_ShouldHave3ChunksAndMatchExpected()
+        {
+            var originalInput = "AAAAbbbbCCCCdddd";
+            var modifiedInput = "AAAACCCCddddbbbb";
+            var blockLength = 4;
+            var strongSignatureLength = 16;
+            var expectedSequencesCount = 3;
+
+            var signature = new SignatureCalculation().CalculateSignature(new SequentialBytesReader(originalInput), blockLength, strongSignatureLength);
+            var actual = this.target.CalculateDelta(signature, new SequentialBytesReader(modifiedInput));
+
+            Assert.Equal(expectedSequencesCount, actual.Sequence.Count);
+
+            Assert.Equal(SequenceType.Chunks, actual.Sequence[0].ChunkType);
+            var firstSequenceItem = (ChunksSequence)actual.Sequence[0];
+            Assert.Equal(0, firstSequenceItem.Position);
+            Assert.Equal(4, firstSequenceItem.Length);
+
+            Assert.Equal(SequenceType.Chunks, actual.Sequence[1].ChunkType);
+            var secondSequenceItem = (ChunksSequence)actual.Sequence[1];
+            Assert.Equal(8, secondSequenceItem.Position);
+            Assert.Equal(8, secondSequenceItem.Length);
+
+            Assert.Equal(SequenceType.Chunks, actual.Sequence[2].ChunkType);
+            var thirdSequenceItem = (ChunksSequence)actual.Sequence[2];
+            Assert.Equal(4, thirdSequenceItem.Position);
+            Assert.Equal(4, thirdSequenceItem.Length);
         }
     }
 }

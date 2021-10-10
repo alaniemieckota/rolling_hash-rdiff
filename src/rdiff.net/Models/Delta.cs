@@ -17,9 +17,13 @@ namespace rdiff.net.models
             this.bytesBuffer.Add(byteToAdd);
         }
 
-        public void AddChunk(int position, int length)
+        public void AddChunk(int position, int length, int blockLength)
         {
             this.FlushBytes();
+            if(this.chunksBuffer.Count > 0 && this.chunksBuffer.Last().Position - (position - blockLength) != 0)
+            {
+                this.FlushChunks();
+            }
 
             this.chunksBuffer.Add(new ChunkMetadata { Position = position, Length = length });
         }
