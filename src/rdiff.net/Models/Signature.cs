@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace rdiff.net
+namespace rdiff.net.models
 {
     public class Signature
     {

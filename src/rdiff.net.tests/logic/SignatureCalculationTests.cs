@@ -1,16 +1,17 @@
 using Moq;
+using rdiff.net.logic;
 using System;
 using Xunit;
 
-namespace rdiff.net.tests
+namespace rdiff.net.tests.logic
 {
-    public class RollingHashTests
+    public class SignatureCalculationTests
     {
-        private readonly RollingHash target;
+        private readonly SignatureCalculation target;
 
-        public RollingHashTests()
+        public SignatureCalculationTests()
         {
-            this.target = new RollingHash();
+            this.target = new SignatureCalculation();
         }
 
         [Fact]
