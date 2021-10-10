@@ -7,5 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Blake3" Version="0.3.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1" />
   </ItemGroup>
 </Project>

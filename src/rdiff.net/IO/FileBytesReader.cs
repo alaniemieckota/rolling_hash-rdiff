@@ -3,19 +3,19 @@ using System.IO;
 
 namespace rdiff.net
 {
-    public class FileBytesReader : IBytesReader
+    public class FileBytesReader : IBytesReader, IDisposable
     {
-        private readonly string filePath;
+        private readonly FileInfo fileInfo;
         private Stream sourceStream;
 
-        public FileBytesReader(string filePath)
+        public FileBytesReader(FileInfo file)
         {
-            if(string.IsNullOrWhiteSpace(filePath))
+            if(file == null)
             {
-                throw new ArgumentException($"{nameof(filePath)} cannot be null or empty.", nameof(filePath));
+                throw new ArgumentException($"{nameof(file)} cannot be null.", nameof(file));
             }
 
-            this.filePath = filePath;
+            this.fileInfo = file;
         }
 
         public bool GetNext(int size, out byte[] result)
@@ -32,13 +32,28 @@ namespace rdiff.net
             return this.Source.ReadByte();
         }
 
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+           
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                this.sourceStream?.Dispose();
+            }
+        }
+
         private Stream Source
         {
             get 
             {
                 if (this.sourceStream == null)
                 {
-                    this.sourceStream = File.OpenRead(this.filePath);
+                    this.sourceStream = this.fileInfo.OpenRead();
                 }
 
                 return sourceStream;

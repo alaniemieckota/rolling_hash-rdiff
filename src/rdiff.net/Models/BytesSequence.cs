@@ -2,8 +2,11 @@
 {
     public class BytesSequence : ISequence
     {
-        public SequenceType ChunkType { get; set; } = SequenceType.Bytes;
-
+        public BytesSequence()
+        {
+            this.ChunkType = SequenceType.Bytes;
+        }
+        
         public byte[] Bytes { get; set; }
 
         public int Length { get; set; }

@@ -2,7 +2,10 @@
 {
     public class ChunksSequence : ISequence
     {
-        public SequenceType ChunkType { get; set; } = SequenceType.Chunks;
+        public ChunksSequence()
+        {
+            this.ChunkType = SequenceType.Chunks;
+        }
 
         public int Position { get; set; }
 

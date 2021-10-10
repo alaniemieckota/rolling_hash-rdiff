@@ -1,7 +1,7 @@
 ﻿namespace rdiff.net.models
 {
-    public interface ISequence
+    public class ISequence
     {
-        SequenceType ChunkType { get; set; }
+        public SequenceType ChunkType { get; set; }
     }
 }

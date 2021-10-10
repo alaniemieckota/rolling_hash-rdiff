@@ -10,6 +10,6 @@ namespace rdiff.net.models
 
         public Dictionary<int, int> WeakSigToBlock { get; set; } = new();
 
-        public List<string> StrongSignatures = new();
+        public List<string> StrongSignatures { get; set; } = new();
     }
 }
